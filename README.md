@@ -1,6 +1,6 @@
 # wml-monitor-ui
 
-This is a simple prototype of UI to monitor Decision Optimization for WML dpeloyments and jobs.
+This is a simple prototype of UI to monitor Decision Optimization for WML deployments and jobs.
 
 ![Screenshot](/images/ui.png)
 
