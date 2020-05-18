@@ -69,7 +69,7 @@ let IAM_TIMEOUT = 3600;
 
 let credentials = null;
 var fs = require('fs');
-let contents = fs.readFileSync("credentials.json", 'utf8');
+let contents = fs.readFileSync("credentials-us2.json", 'utf8');
 credentials = JSON.parse(contents);
 
 let bearerToken = null;
