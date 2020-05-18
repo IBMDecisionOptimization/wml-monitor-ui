@@ -1,0 +1,240 @@
+
+let IAM_URL = "https://iam.cloud.ibm.com/identity/token";
+let IAM_TIMEOUT = 3600;
+let deployment_id = null;
+let job_id = null;
+let bearerToken = null;
+let bearerTokenTime = 0;
+
+function load() {        
+        getDeployments();
+}
+
+function emptyJobDetails() {
+        let div = document.getElementById("job_div");
+        div.innerHTML = "";
+}
+
+function selectJob(jobId) {
+        job_id = jobId;
+        showJobs();
+        
+        let div = document.getElementById("job_div");
+        div.innerHTML = "... UPDATING JOB DETAILS ...";
+        axios({
+                method:'get',
+                url:'/api/jobs/'+jobId,
+                responseType:'json',
+              })
+        .then(function (response) {
+                let div = document.getElementById("job_div");
+                let html = '<b>Job: ' + response.data.metadata.guid + '</b><div id="REFRESH_JOB" style="cursor:pointer">REFRESH</div><br>'
+                html +=  '<b>Created at:</b> ' + response.data.metadata.created_at + '<br>';
+                html +=  '<b>Completed at:</b> ' + response.data.entity.decision_optimization.status.completed_at + '<br>';
+                for (r in response.data.entity.decision_optimization.input_data)
+                        html += '<b>Input:</b> <a href="/api/jobs/'+job_id+'/'+response.data.entity.decision_optimization.input_data[r].id+'">' + response.data.entity.decision_optimization.input_data[r].id + '</a><br>';
+                for (r in response.data.entity.decision_optimization.input_data_references)
+                        html += '<b>Input Reference:</b> <a href="/api/jobs/'+job_id+'/'+response.data.entity.decision_optimization.input_data_references[r].id+'">' + response.data.entity.decision_optimization.input_data_references[r].id + '</a><br>';
+                for (r in response.data.entity.decision_optimization.output_data)
+                        html += '<b>Output:</b> <a href="/api/jobs/'+job_id+'/'+response.data.entity.decision_optimization.output_data[r].id+'">' + response.data.entity.decision_optimization.output_data[r].id + '</a><br>';
+                for (r in response.data.entity.decision_optimization.output_data_references)
+                        html += '<b>Output Reference:</b> <a href="/api/jobs/'+job_id+'/'+response.data.entity.decision_optimization.output_data_references[r].id+'">' + response.data.entity.decision_optimization.output_data_references[r].id + '</a><br>';
+                html +=  '<b>State:</b> ' + response.data.entity.decision_optimization.status.state + '<br>';
+                if ('solve_state' in response.data.entity.decision_optimization) {
+                        html +=  '<b>Solve State:</b> ' + response.data.entity.decision_optimization.solve_state.solve_status + '<br>';
+                        html +=  '<b>Last log:</b> <br>';
+                        for (r in response.data.entity.decision_optimization.solve_state.latest_engine_activity)
+                                html +=response.data.entity.decision_optimization.solve_state.latest_engine_activity[r]  + '<br>';
+                }
+        
+               div.innerHTML = html;  
+               document.getElementById('REFRESH_JOB').onclick = function() {
+                        selectJob(job_id);
+                }   
+        });
+    }
+
+jobs = null;
+function showJobs() {
+
+        resources = jobs;
+        let div = document.getElementById("jobs_div");
+        if (resources==null) {
+                div.innerHTML = "";
+                return;
+        }
+
+        let html = '<b>Jobs ('+ resources.length +')</b><div id="REFRESH_JOBS" style="cursor:pointer">REFRESH</div><br>'
+        html += '<table class="table table-hover table-sm">'
+        html += '<thead><tr><th>id</th><th>state</th><th>created at</th><th></th><th></th></tr></thead>'
+        html += '<tbody>'
+
+        for (let r in resources) {
+                html += '<tr>'
+                let res = resources[r][1];
+                let isBold = (job_id == res.metadata.guid)
+                let sbold = isBold ? '<b>' : '';
+                let ebold = isBold ? '</b>' : '';
+                html += '<td>' + sbold + res.metadata.guid + ebold + '</td>';
+                html += '<td>' + sbold + res.entity.decision_optimization.status.state + ebold + '</td>';
+                html += '<td>' + sbold + res.metadata.created_at + ebold + '</td>';
+                if (isBold) {
+                        html += '<td></td>';
+                } else {
+                        html += '<td>' + sbold + '<div id="JOB_SELECT_'+res.metadata.guid+'" style="cursor:pointer">SELECT</div>'+ ebold +'</td>';
+                }
+                html += '<td>' + sbold + '<div id="JOB_DELETE_'+res.metadata.guid+'" style="cursor:pointer">DELETE</div>'+ ebold + '</td>';
+                html += '</tr/>';                       
+        }
+        html += '</tbody>';
+        html += '</table>';
+        div.innerHTML = html;
+        for (let r in resources) {
+                let res = resources[r][1];
+                document.getElementById('JOB_DELETE_'+res.metadata.guid).onclick = function() {
+                        deleteJob(res.metadata.guid);
+                }
+                let isBold = (job_id == res.metadata.guid)
+                if (!isBold)
+                        document.getElementById('JOB_SELECT_'+res.metadata.guid).onclick = function() {
+                        selectJob(res.metadata.guid);
+                }
+        }
+        document.getElementById('REFRESH_JOBS').onclick = function() {
+                getJobs(deployment_id);
+        }
+}
+
+function emptyJobs() {
+        jobs = null;
+        showJobs();
+}
+
+function getJobs(deploymentId) {
+        deployment_id = deploymentId;
+        showDeployments();
+        emptyJobs();
+        emptyJobDetails();
+
+        let div = document.getElementById("jobs_div");
+        div.innerHTML = "... UPDATING JOBS LIST ...";
+        axios({
+                method:'get',
+                url:'/api/jobs?deployment_id='+deploymentId,
+                responseType:'json',
+              })
+        .then(function (response) {                               
+
+                // Create items array
+                var resources = Object.keys(response.data.resources).map(function(key) {
+                        return [key, response.data.resources[key]];
+                });
+                
+                        // Sort the array based on the second element
+                resources.sort(function(first, second) {
+                        return Date.parse(second[1].metadata.created_at) - Date.parse(first[1].metadata.created_at);
+                });
+
+                jobs = resources;
+                showJobs();                
+                        
+        });
+    }
+
+deployments = null;
+function showDeployments() {
+        let resources = deployments;
+
+        let div = document.getElementById("deployments_div");
+                
+        let html = '<b>Deployments ('+ resources.length +')</b><div id="REFRESH_DEPLOYMENTS" style="cursor:pointer">REFRESH</div><br>'
+        html += '<table class="table table-hover table-sm">'
+        html += '<thead><tr><th>Name</th><th>nodes</th><th>size</th><th>state</th><th>created at</th><th>id</th><th></th><th></th></tr></thead>'
+        html += '<tbody>'
+
+        for (let r in resources) {
+                html += '<tr>'
+                let res = resources[r][1];
+                let isBold = (deployment_id == res.metadata.guid)
+                let sbold = isBold ? '<b>' : '';
+                let ebold = isBold ? '</b>' : '';
+                html += '<td>' + sbold + res.entity.name + ebold + '</td>';
+                if ('compute' in res.entity)  {
+                        html += '<td>' + sbold + res.entity.compute.name + ebold + '</td>';
+                        html += '<td>' + sbold + res.entity.compute.nodes + ebold + '</td>';
+                } else {
+                        html += '<td></td>';
+                        html += '<td></td>';
+                }
+                html += '<td>' + sbold + res.entity.status.state + ebold + '</td>';
+                html += '<td>' + sbold + res.metadata.created_at + ebold + '</td>';
+                html += '<td>' + sbold + res.metadata.guid + ebold + '</td>';
+                if (isBold) {
+                        html += '<td></td>';
+                } else {
+                        html += '<td>' + sbold + '<div id="DEPLOYMENT_SELECT_'+res.metadata.guid+'" style="cursor:pointer">SELECT</div>'+ ebold +'</td>';
+                }
+                html += '<td>' + sbold + '<div id="DEPLOYMENT_DELETE_'+res.metadata.guid+'" style="cursor:pointer">DELETE</div>'+ ebold + '</td>';
+                html += '</tr/>';                       
+        }
+        html += '</tbody>';
+        html += '</table>';
+        div.innerHTML = html;
+        for (let r in resources) {
+                let res = resources[r][1];
+                document.getElementById('DEPLOYMENT_DELETE_'+res.metadata.guid).onclick = function() {
+                    deleteDeployement(res.metadata.guid);
+                }
+                let isBold = (deployment_id == res.metadata.guid);
+                if (!isBold)
+                    document.getElementById('DEPLOYMENT_SELECT_'+res.metadata.guid).onclick = function() {
+                        getJobs(res.metadata.guid);
+                    }
+            }
+        document.getElementById('REFRESH_DEPLOYMENTS').onclick = function() {
+                getDeployments();
+        }
+}
+function getDeployments() {
+        div = document.getElementById("deployments_div");
+        div.innerHTML = "... UPDATING DEPLOYMENTS LIST ...";
+        axios({
+                method:'get',
+                url:'/api/deployments',
+                responseType:'json',
+              })
+        .then(function (response) {
+                
+                // Create items array
+                var resources = Object.keys(response.data.resources).map(function(key) {
+                        return [key, response.data.resources[key]];
+                });
+                
+                        // Sort the array based on the second element
+                resources.sort(function(first, second) {
+                        return Date.parse(second[1].metadata.created_at) - Date.parse(first[1].metadata.created_at);
+                });
+        
+                deployments = resources;
+                showDeployments();
+
+        });
+}    
+
+function changeCredentials() {
+        let credentials = JSON.parse(document.getElementById("credentials").value);
+
+        document.getElementById("credentials").value = "";
+
+        axios({
+                method:'put',
+                url:'/api/credentials',
+                responseType:'json',
+                data:credentials
+              })
+        .then(function (response) {
+                getDeployments();
+
+        });
+
+}

@@ -1,0 +1,33 @@
+<!DOCTYPE html>
+<html>
+<title>DO for WML Monitoring</title>
+
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+
+<head>
+  <script src="./dist/axios.min.js"></script>
+  <link href="./stylesheets/style.css" rel="stylesheet" />
+  <link rel="stylesheet" href="https://stackpath.bootstrapcdn.com/bootstrap/4.2.1/css/bootstrap.min.css" integrity="sha384-GJzZqFGwb1QTTN6wy59ffF1BuGJpLSa9DkKMp0DgiMDm4iYMj70gZWKYbI706tWS" crossorigin="anonymous">
+
+  <script src="https://ajax.googleapis.com/ajax/libs/jquery/1.11.1/jquery.min.js"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/jqueryui/1.11.0/jquery-ui.js"></script>
+  <script src="https://maxcdn.bootstrapcdn.com/bootstrap/3.2.0/js/bootstrap.min.js"></script>
+
+  
+</head>
+<body onload="load()"
+        style=" height: 100%; ">
+    <div id="credentials_div" class="container">
+    <textarea  id="credentials"  rows="3" cols="100" placeholder="Paste your WML credentials in JSON format here" onchange="changeCredentials()"></textarea>
+     </div>
+    
+    <div id="deployments_div" class="container bg-light"></div>
+    <div id="jobs_div" class="container bg-white"></div>
+    <div id="job_div" class="container bg-light"></div>
+
+</body>
+
+
+<script type="text/javascript" src="./main.js"></script>
+</html>
