@@ -2,6 +2,8 @@
 
 This is a simple prototype of UI to monitor Decision Optimization for WML dpeloyments and jobs.
 
+![Screenshot](/images/ui.png)
+
 ## Run the app locally
 
 1. [Install Node.js][]
