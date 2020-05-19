@@ -14,17 +14,20 @@
   <script src="https://cdnjs.cloudflare.com/ajax/libs/jqueryui/1.11.0/jquery-ui.js"></script>
   <script src="https://maxcdn.bootstrapcdn.com/bootstrap/3.2.0/js/bootstrap.min.js"></script>
 
-  
+  <script type="text/javascript" src="https://www.gstatic.com/charts/loader.js"></script>
+  <script type="text/javascript">
+      google.charts.load('current', {'packages':['timeline', 'line']});
+  </script>
 </head>
 <body onload="load()"
         style=" height: 100%; ">
-    <div id="credentials_div" class="container">
+    <div id="credentials_div" class="container" style="width:80%">
     <textarea  id="credentials"  rows="3" cols="100" placeholder="Paste your WML credentials in JSON format here" onchange="changeCredentials()"></textarea>
      </div>
     
-    <div id="deployments_div" class="container bg-light"></div>
-    <div id="jobs_div" class="container bg-white"></div>
-    <div id="job_div" class="container bg-light"></div>
+    <div id="deployments_div" class="container bg-light" style="min-width:1500px"></div>
+    <div id="jobs_div" class="container bg-white" style="min-width:1500px"></div>
+    <div id="job_div" class="container bg-light" style="min-width:1500px"></div>
 
 </body>
 

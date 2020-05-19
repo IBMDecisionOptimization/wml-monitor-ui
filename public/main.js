@@ -43,10 +43,11 @@ function selectJob(jobId) {
                 if ('solve_state' in response.data.entity.decision_optimization) {
                         html +=  '<b>Solve State:</b> ' + response.data.entity.decision_optimization.solve_state.solve_status + '<br>';
                         html +=  '<b>Last log:</b> <br>';
+                        html += '<pre>';
                         for (r in response.data.entity.decision_optimization.solve_state.latest_engine_activity)
-                                html +=response.data.entity.decision_optimization.solve_state.latest_engine_activity[r]  + '<br>';
+                                html +=response.data.entity.decision_optimization.solve_state.latest_engine_activity[r];
+                        html += '</pre>';
                 }
-        
                div.innerHTML = html;  
                document.getElementById('REFRESH_JOB').onclick = function() {
                         selectJob(job_id);
@@ -66,7 +67,7 @@ function showJobs() {
 
         let html = '<b>Jobs ('+ resources.length +')</b><div id="REFRESH_JOBS" style="cursor:pointer">REFRESH</div><br>'
         html += '<table class="table table-hover table-sm">'
-        html += '<thead><tr><th>id</th><th>state</th><th>created at</th><th></th><th></th></tr></thead>'
+        html += '<thead><tr><th>id</th><th>state</th><th>created</th><th>running</th><th>completed</th><th></th><th></th></tr></thead>'
         html += '<tbody>'
 
         for (let r in resources) {
@@ -78,6 +79,15 @@ function showJobs() {
                 html += '<td>' + sbold + res.metadata.guid + ebold + '</td>';
                 html += '<td>' + sbold + res.entity.decision_optimization.status.state + ebold + '</td>';
                 html += '<td>' + sbold + res.metadata.created_at + ebold + '</td>';
+                if ('status' in res.entity.decision_optimization) {
+                        html += '<td>' + sbold + res.entity.decision_optimization.status.running_at + ebold + '</td>';
+                        html += '<td>' + sbold + res.entity.decision_optimization.status.completed_at + ebold + '</td>';        
+                }
+                else {
+                        html += '<td></td>';
+                        html += '<td></td>';
+                }
+
                 if (isBold) {
                         html += '<td></td>';
                 } else {
@@ -88,6 +98,7 @@ function showJobs() {
         }
         html += '</tbody>';
         html += '</table>';
+        html += '<div id="jobs_timeline" style="height: 480px;"></div>'
         div.innerHTML = html;
         for (let r in resources) {
                 let res = resources[r][1];
@@ -103,6 +114,30 @@ function showJobs() {
         document.getElementById('REFRESH_JOBS').onclick = function() {
                 getJobs(deployment_id);
         }
+        var container = document.getElementById('jobs_timeline');
+        var chart = new google.visualization.Timeline(container);
+        var dataTable = new google.visualization.DataTable();
+
+        dataTable.addColumn({ type: 'string', id: 'id' });
+        dataTable.addColumn({ type: 'date', id: 'Start' });
+        dataTable.addColumn({ type: 'date', id: 'End' });
+
+        for (let r in resources) {
+                 let res = resources[r][1];
+                dataTable.addRow([  res.metadata.guid, 
+                        new Date(res.entity.decision_optimization.status.running_at), 
+                        new Date(res.entity.decision_optimization.status.completed_at) ])
+        }
+        dataTable.sort([{column: 1}]);
+        var options = {
+          title: 'Jobs timeline',          
+          hAxis: {
+            format: 'M/d/yy',
+            gridlines: {count: 15}
+          }        
+         };
+
+        chart.draw(dataTable, options);
 }
 
 function emptyJobs() {
