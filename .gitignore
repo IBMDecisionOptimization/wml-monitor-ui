@@ -3,3 +3,6 @@ node_modules/
 .DS_Store
 public/dist/
 package-lock.json
+credentials-us2.json
+credentials-us.json
+credentials-gb.json

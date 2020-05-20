@@ -176,6 +176,19 @@ function getJobs(deploymentId) {
         });
     }
 
+function deleteDeployment(deploymentId) {
+
+        let div = document.getElementById("jobs_div");
+        div.innerHTML = "... UPDATING JOBS LIST ...";
+        axios({
+                method:'delete',
+                url:'/api/deployments/'+deploymentId,
+                responseType:'json',
+              })
+        .then(function (response) {                           
+                getDeployments();
+        });
+}
 deployments = null;
 function showDeployments() {
         let resources = deployments;
@@ -218,7 +231,7 @@ function showDeployments() {
         for (let r in resources) {
                 let res = resources[r][1];
                 document.getElementById('DEPLOYMENT_DELETE_'+res.metadata.guid).onclick = function() {
-                    deleteDeployement(res.metadata.guid);
+                    deleteDeployment(res.metadata.guid);
                 }
                 let isBold = (deployment_id == res.metadata.guid);
                 if (!isBold)

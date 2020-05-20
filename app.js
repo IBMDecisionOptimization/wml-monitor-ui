@@ -69,7 +69,8 @@ let IAM_TIMEOUT = 3600;
 
 let credentials = null;
 var fs = require('fs');
-let contents = fs.readFileSync("credentials.json", 'utf8');
+let contents = fs.readFileSync("credentials-gb.json", 'utf8');
+//let contents = fs.readFileSync("credentials-us.json", 'utf8');
 credentials = JSON.parse(contents);
 
 let bearerToken = null;
@@ -114,8 +115,34 @@ router.put('/credentials', function(req, res) {
     res.end();
 });
 
+router.delete('/deployments/:deployment_id', function(req, res) {
+    let deployment_id = req.params.deployment_id;
+
+    let options = {
+        url: credentials.url + '/v4/deployments/'+deployment_id,
+        headers: {
+            'Accept': 'application/json',
+            'Authorization': 'bearer ' + getDOBearerToken(),
+            'ML-Instance-ID': credentials.instance_id,
+            'cache-control': 'no-cache'
+        }
+    };
+
+    let request = require('request');
+    
+    request.delete(options, function (error, response, body){
+        if (error || response.statusCode >= 400) {
+            console.error('Error getting deployments: ' + body.toString())
+            res.json({});
+        } else {
+            res.status(200);
+            res.end();        
+        }
+    });	
+
+});
+
 router.get('/deployments', function(req, res) {
-            
 
     let options = {
         url: credentials.url + '/v4/deployments',
