@@ -106,6 +106,7 @@ function getHeaders() {
 router.put('/credentials', function(req, res) {
     //let scenario = req.query.scenario;
     credentials = req.body;
+    lookupSynchDOBearerToken();
     res.status(200);
     res.end();
 });
@@ -161,6 +162,37 @@ router.get('/deployments', function(req, res) {
 
 });
 
+router.post('/jobs', function(req, res) {
+        let job =  req.body;
+        job['name'] = "Copied_job";
+        job['space_id'] = credentials.space_id;
+
+        let options = {
+            headers: getHeaders(),
+            json: job
+        };
+        if (useV4Final)
+            options.url = credentials.url + '/ml/v4/deployment_jobs?version=2020-08-07&space_id='+credentials.space_id;
+        else 
+            options.url = credentials.url + '/v4/deployment_jobs';
+    
+    
+        let request = require('request');
+        
+        request.post(options, function (error, response, body){
+            if (error || response.statusCode >= 400) {
+                console.error('Error getting jobs: ' + body.toString())
+                res.json({});
+            } else {
+   
+                res.json(body);
+            
+            }
+        });	
+
+}
+);
+
 
 router.get('/jobs', function(req, res) {
     let deployment_id = req.query.deployment_id;
@@ -190,6 +222,31 @@ router.get('/jobs', function(req, res) {
 
 });
 
+router.delete('/jobs/:job_id', function(req, res) {
+    let job_id = req.params.job_id;
+
+    let options = {
+        headers: getHeaders()
+    };
+    if (useV4Final)
+        options.url = credentials.url + '/ml/v4/deployment_jobs/' + job_id + '?version=2020-08-07&hard_delete=true&space_id=' + credentials.space_id;
+    else 
+        options.url = credentials.url + '/v4/deployment_jobs/' + job_id + '?hard_delete=true'
+
+    let request = require('request');
+    
+    request.delete(options, function (error, response, body){
+        if (error || response.statusCode >= 400) {
+            console.error('Error deleting job: ' + body.toString())
+            res.json({});
+        } else {
+            res.status(200);
+            res.end();
+        
+        }
+    });	
+
+});
 
 router.get('/jobs/:job_id', function(req, res) {
     let job_id = req.params.job_id;

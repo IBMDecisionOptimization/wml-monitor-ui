@@ -15,6 +15,37 @@ function emptyJobDetails() {
         div.innerHTML = "";
 }
 
+function deleteJob(jobId) {
+        axios({
+                method:'delete',
+                url:'/api/jobs/'+jobId,
+                responseType:'json',
+              })
+        .then(function (response) {
+                getJobs(deployment_id); 
+        });
+}
+function rerunJob(jobId) {
+        
+        axios({
+                method:'get',
+                url:'/api/jobs/'+jobId,
+                responseType:'json',
+              })
+        .then(function (response) {
+                let job_id = ("guid" in response.data.metadata) ? response.data.metadata.guid : response.data.metadata.id; 
+                axios({
+                        method:'post',
+                        url:'/api/jobs',
+                        responseType:'json',
+                        data: response.data.entity
+                      })
+                .then(function (response) {
+
+                        getJobs(deployment_id);
+                });
+        });
+}
 function selectJob(jobId) {
         job_id = jobId;
         showJobs();
@@ -68,7 +99,7 @@ function showJobs() {
 
         let html = '<b>Jobs ('+ resources.length +')</b><div id="REFRESH_JOBS" style="cursor:pointer">REFRESH</div><br>'
         html += '<table class="table table-hover table-sm">'
-        html += '<thead><tr><th>id</th><th>state</th><th>created</th><th>running</th><th>completed</th><th></th><th></th></tr></thead>'
+        html += '<thead><tr><th>id</th><th>state</th><th>created</th><th>running</th><th>completed</th><th></th><th></th><th></th></tr></thead>'
         html += '<tbody>'
 
         for (let r in resources) {
@@ -94,6 +125,7 @@ function showJobs() {
                 } else {
                         html += '<td>' + sbold + '<div id="JOB_SELECT_'+res_id+'" style="cursor:pointer">SELECT</div>'+ ebold +'</td>';
                 }
+                html += '<td>' + sbold + '<div id="JOB_RERUN_'+res_id+'" style="cursor:pointer">RERUN</div>'+ ebold +'</td>';
                 html += '<td>' + sbold + '<div id="JOB_DELETE_'+res_id+'" style="cursor:pointer">DELETE</div>'+ ebold + '</td>';
                 html += '</tr/>';                       
         }
@@ -107,6 +139,9 @@ function showJobs() {
                 let res_id = ("guid" in res.metadata) ? res.metadata.guid : res.metadata.id;
                 document.getElementById('JOB_DELETE_'+res_id).onclick = function() {
                         deleteJob(res_id);
+                }
+                document.getElementById('JOB_RERUN_'+res_id).onclick = function() {
+                        rerunJob(res_id);
                 }
                 let isBold = (job_id == res_id)
                 if (!isBold)
