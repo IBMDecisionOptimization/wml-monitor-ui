@@ -27,25 +27,26 @@ function selectJob(jobId) {
                 responseType:'json',
               })
         .then(function (response) {
-                let div = document.getElementById("job_div");
-                let html = '<b>Job: ' + response.data.metadata.guid + '</b><div id="REFRESH_JOB" style="cursor:pointer">REFRESH</div><br>'
+                let div = document.getElementById("job_div");        
+                let job_id = ("guid" in response.data.metadata) ? response.data.metadata.guid : response.data.metadata.id;        
+                let html = '<b>Job: ' + job_id + '</b><div id="REFRESH_JOB" style="cursor:pointer">REFRESH</div><br>'
                 html +=  '<b>Created at:</b> ' + response.data.metadata.created_at + '<br>';
                 html +=  '<b>Completed at:</b> ' + response.data.entity.decision_optimization.status.completed_at + '<br>';
                 for (r in response.data.entity.decision_optimization.input_data)
-                        html += '<b>Input:</b> <a href="/api/jobs/'+job_id+'/'+response.data.entity.decision_optimization.input_data[r].id+'">' + response.data.entity.decision_optimization.input_data[r].id + '</a><br>';
+                        html += '<b>Input (inline):</b> <a target="_blank" href="/api/jobs/'+job_id+'/'+response.data.entity.decision_optimization.input_data[r].id+'">' + response.data.entity.decision_optimization.input_data[r].id + '</a><br>';
                 for (r in response.data.entity.decision_optimization.input_data_references)
-                        html += '<b>Input Reference:</b> <a href="/api/jobs/'+job_id+'/'+response.data.entity.decision_optimization.input_data_references[r].id+'">' + response.data.entity.decision_optimization.input_data_references[r].id + '</a><br>';
+                        html += '<b>Input (reference):</b> <a target="_blank" href="/api/jobs/'+job_id+'/'+response.data.entity.decision_optimization.input_data_references[r].id+'">' + response.data.entity.decision_optimization.input_data_references[r].id + '</a><br>';
                 for (r in response.data.entity.decision_optimization.output_data)
-                        html += '<b>Output:</b> <a href="/api/jobs/'+job_id+'/'+response.data.entity.decision_optimization.output_data[r].id+'">' + response.data.entity.decision_optimization.output_data[r].id + '</a><br>';
+                        html += '<b>Output (inline):</b> <a target="_blank" href="/api/jobs/'+job_id+'/'+response.data.entity.decision_optimization.output_data[r].id+'">' + response.data.entity.decision_optimization.output_data[r].id + '</a><br>';
                 for (r in response.data.entity.decision_optimization.output_data_references)
-                        html += '<b>Output Reference:</b> <a href="/api/jobs/'+job_id+'/'+response.data.entity.decision_optimization.output_data_references[r].id+'">' + response.data.entity.decision_optimization.output_data_references[r].id + '</a><br>';
+                        html += '<b>Output (reference):</b> <a target="_blank" href="/api/jobs/'+job_id+'/'+response.data.entity.decision_optimization.output_data_references[r].id+'">' + response.data.entity.decision_optimization.output_data_references[r].id + '</a><br>';
                 html +=  '<b>State:</b> ' + response.data.entity.decision_optimization.status.state + '<br>';
                 if ('solve_state' in response.data.entity.decision_optimization) {
                         html +=  '<b>Solve State:</b> ' + response.data.entity.decision_optimization.solve_state.solve_status + '<br>';
                         html +=  '<b>Last log:</b> <br>';
                         html += '<pre>';
                         for (r in response.data.entity.decision_optimization.solve_state.latest_engine_activity)
-                                html +=response.data.entity.decision_optimization.solve_state.latest_engine_activity[r];
+                                html +=response.data.entity.decision_optimization.solve_state.latest_engine_activity[r] + "\n";
                         html += '</pre>';
                 }
                div.innerHTML = html;  
@@ -73,17 +74,17 @@ function showJobs() {
         for (let r in resources) {
                 html += '<tr>'
                 let res = resources[r][1];
-                let isBold = (job_id == res.metadata.guid)
+                let res_id = ("guid" in res.metadata) ? res.metadata.guid : res.metadata.id;
+                let isBold = (job_id == res_id)
                 let sbold = isBold ? '<b>' : '';
                 let ebold = isBold ? '</b>' : '';
-                html += '<td>' + sbold + res.metadata.guid + ebold + '</td>';
+                html += '<td>' + sbold + res_id + ebold + '</td>';
                 html += '<td>' + sbold + res.entity.decision_optimization.status.state + ebold + '</td>';
                 html += '<td>' + sbold + res.metadata.created_at + ebold + '</td>';
                 if ('status' in res.entity.decision_optimization) {
                         html += '<td>' + sbold + res.entity.decision_optimization.status.running_at + ebold + '</td>';
                         html += '<td>' + sbold + res.entity.decision_optimization.status.completed_at + ebold + '</td>';        
-                }
-                else {
+                } else {
                         html += '<td></td>';
                         html += '<td></td>';
                 }
@@ -91,53 +92,59 @@ function showJobs() {
                 if (isBold) {
                         html += '<td></td>';
                 } else {
-                        html += '<td>' + sbold + '<div id="JOB_SELECT_'+res.metadata.guid+'" style="cursor:pointer">SELECT</div>'+ ebold +'</td>';
+                        html += '<td>' + sbold + '<div id="JOB_SELECT_'+res_id+'" style="cursor:pointer">SELECT</div>'+ ebold +'</td>';
                 }
-                html += '<td>' + sbold + '<div id="JOB_DELETE_'+res.metadata.guid+'" style="cursor:pointer">DELETE</div>'+ ebold + '</td>';
+                html += '<td>' + sbold + '<div id="JOB_DELETE_'+res_id+'" style="cursor:pointer">DELETE</div>'+ ebold + '</td>';
                 html += '</tr/>';                       
         }
         html += '</tbody>';
         html += '</table>';
-        html += '<div id="jobs_timeline" style="height: 480px;"></div>'
+        if (resources.length> 0) 
+                html += '<div id="jobs_timeline" style="height: 480px;"></div>'
         div.innerHTML = html;
         for (let r in resources) {
                 let res = resources[r][1];
-                document.getElementById('JOB_DELETE_'+res.metadata.guid).onclick = function() {
-                        deleteJob(res.metadata.guid);
+                let res_id = ("guid" in res.metadata) ? res.metadata.guid : res.metadata.id;
+                document.getElementById('JOB_DELETE_'+res_id).onclick = function() {
+                        deleteJob(res_id);
                 }
-                let isBold = (job_id == res.metadata.guid)
+                let isBold = (job_id == res_id)
                 if (!isBold)
-                        document.getElementById('JOB_SELECT_'+res.metadata.guid).onclick = function() {
-                        selectJob(res.metadata.guid);
+                        document.getElementById('JOB_SELECT_'+res_id).onclick = function() {
+                        selectJob(res_id);
                 }
         }
         document.getElementById('REFRESH_JOBS').onclick = function() {
                 getJobs(deployment_id);
         }
-        var container = document.getElementById('jobs_timeline');
-        var chart = new google.visualization.Timeline(container);
-        var dataTable = new google.visualization.DataTable();
 
-        dataTable.addColumn({ type: 'string', id: 'id' });
-        dataTable.addColumn({ type: 'date', id: 'Start' });
-        dataTable.addColumn({ type: 'date', id: 'End' });
+        if (resources.length> 0) {
+                var container = document.getElementById('jobs_timeline');
+                var chart = new google.visualization.Timeline(container);
+                var dataTable = new google.visualization.DataTable();
 
-        for (let r in resources) {
-                 let res = resources[r][1];
-                dataTable.addRow([  res.metadata.guid, 
-                        new Date(res.entity.decision_optimization.status.running_at), 
-                        new Date(res.entity.decision_optimization.status.completed_at) ])
+                dataTable.addColumn({ type: 'string', id: 'id' });
+                dataTable.addColumn({ type: 'date', id: 'Start' });
+                dataTable.addColumn({ type: 'date', id: 'End' });
+
+                for (let r in resources) {
+                        let res = resources[r][1];
+                        let res_id = ("guid" in res.metadata) ? res.metadata.guid : res.metadata.id;
+                        dataTable.addRow([  res_id, 
+                                new Date(res.entity.decision_optimization.status.running_at), 
+                                new Date(res.entity.decision_optimization.status.completed_at) ])
+                }
+                dataTable.sort([{column: 1}]);
+                var options = {
+                  title: 'Jobs timeline',          
+                  hAxis: {
+                    format: 'M/d/yy',
+                    gridlines: {count: 15}
+                  }        
+                 };
+
+                chart.draw(dataTable, options);
         }
-        dataTable.sort([{column: 1}]);
-        var options = {
-          title: 'Jobs timeline',          
-          hAxis: {
-            format: 'M/d/yy',
-            gridlines: {count: 15}
-          }        
-         };
-
-        chart.draw(dataTable, options);
 }
 
 function emptyJobs() {
@@ -203,11 +210,15 @@ function showDeployments() {
         for (let r in resources) {
                 html += '<tr>'
                 let res = resources[r][1];
-                let isBold = (deployment_id == res.metadata.guid)
+                let res_id = ("guid" in res.metadata) ? res.metadata.guid : res.metadata.id;
+                let isBold = (deployment_id == res_id);
                 let sbold = isBold ? '<b>' : '';
                 let ebold = isBold ? '</b>' : '';
                 html += '<td>' + sbold + res.entity.name + ebold + '</td>';
-                if ('compute' in res.entity)  {
+                if ('hardware_spec' in res.entity)  {
+                        html += '<td>' + sbold + res.entity.hardware_spec.name + ebold + '</td>';
+                        html += '<td>' + sbold + res.entity.hardware_spec.num_nodes + ebold + '</td>';
+                } else if ('compute' in res.entity)  {
                         html += '<td>' + sbold + res.entity.compute.name + ebold + '</td>';
                         html += '<td>' + sbold + res.entity.compute.nodes + ebold + '</td>';
                 } else {
@@ -216,13 +227,13 @@ function showDeployments() {
                 }
                 html += '<td>' + sbold + res.entity.status.state + ebold + '</td>';
                 html += '<td>' + sbold + res.metadata.created_at + ebold + '</td>';
-                html += '<td>' + sbold + res.metadata.guid + ebold + '</td>';
+                html += '<td>' + sbold + res_id + ebold + '</td>';
                 if (isBold) {
                         html += '<td></td>';
                 } else {
-                        html += '<td>' + sbold + '<div id="DEPLOYMENT_SELECT_'+res.metadata.guid+'" style="cursor:pointer">SELECT</div>'+ ebold +'</td>';
+                        html += '<td>' + sbold + '<div id="DEPLOYMENT_SELECT_'+res_id+'" style="cursor:pointer">SELECT</div>'+ ebold +'</td>';
                 }
-                html += '<td>' + sbold + '<div id="DEPLOYMENT_DELETE_'+res.metadata.guid+'" style="cursor:pointer">DELETE</div>'+ ebold + '</td>';
+                html += '<td>' + sbold + '<div id="DEPLOYMENT_DELETE_'+res_id+'" style="cursor:pointer">DELETE</div>'+ ebold + '</td>';
                 html += '</tr/>';                       
         }
         html += '</tbody>';
@@ -230,13 +241,14 @@ function showDeployments() {
         div.innerHTML = html;
         for (let r in resources) {
                 let res = resources[r][1];
-                document.getElementById('DEPLOYMENT_DELETE_'+res.metadata.guid).onclick = function() {
-                    deleteDeployment(res.metadata.guid);
+                let res_id = ("guid" in res.metadata) ? res.metadata.guid : res.metadata.id;
+                document.getElementById('DEPLOYMENT_DELETE_'+res_id).onclick = function() {
+                    deleteDeployment(res_id);
                 }
-                let isBold = (deployment_id == res.metadata.guid);
+                let isBold = (deployment_id == res_id);
                 if (!isBold)
-                    document.getElementById('DEPLOYMENT_SELECT_'+res.metadata.guid).onclick = function() {
-                        getJobs(res.metadata.guid);
+                    document.getElementById('DEPLOYMENT_SELECT_'+res_id).onclick = function() {
+                        getJobs(res_id);
                     }
             }
         document.getElementById('REFRESH_DEPLOYMENTS').onclick = function() {

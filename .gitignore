@@ -6,3 +6,8 @@ package-lock.json
 credentials-us2.json
 credentials-us.json
 credentials-gb.json
+credentials-pool.json
+credentials-pafrance.json
+credentials-bug.json
+credentials-v2.json
+credentials-smartbp.json
